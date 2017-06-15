@@ -78,7 +78,11 @@ class StackOverflow extends Serializable {
 
   /** Group the questions and answers together */
   def groupedPostings(postings: RDD[Posting]): RDD[(Int, Iterable[(Posting, Posting)])] = {
-    ???
+    val questions = postings.filter(_.postingType == 1).map(q => (q.id, q))
+    val answers = postings.filter(_.postingType == 2).map(a => (a.parentId.get, a))
+    val pairs = questions.join(answers)
+    val grouped = pairs.groupByKey()
+    grouped
   }
 
 
@@ -96,10 +100,8 @@ class StackOverflow extends Serializable {
           }
       highScore
     }
-
-    ???
+    grouped.mapValues(pairs => (pairs.head._1, answerHighScore(pairs.map(_._2).toArray))).values
   }
-
 
   /** Compute the vectors for the kmeans */
   def vectorPostings(scored: RDD[(Posting, Int)]): RDD[(Int, Int)] = {

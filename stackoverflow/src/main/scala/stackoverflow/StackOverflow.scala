@@ -118,8 +118,10 @@ class StackOverflow extends Serializable {
         }
       }
     }
-
-    ???
+    scored.map { case (posting, score) => {
+      val lang = firstLangInTag(posting.tags, langs) * langSpread
+      (lang, score)
+    }
   }
 
 
@@ -294,3 +296,4 @@ class StackOverflow extends Serializable {
       println(f"${score}%7d  ${lang}%-17s (${percent}%-5.1f%%)      ${size}%7d")
   }
 }
+

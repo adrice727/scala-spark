@@ -28,7 +28,7 @@ object StackOverflow extends StackOverflow {
     assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
 
     val means = kmeans(sampleVectors(vectors), vectors, debug = true)
-    //    val results = clusterResults(means, vectors)
+    val results = clusterResults(means, vectors)
     //    printResults(results)
     sc.stop()
   }
@@ -283,13 +283,16 @@ class StackOverflow extends Serializable {
     val closest = vectors.map(p => (findClosest(p, means), p))
     val closestGrouped = closest.groupByKey()
 
+
     val median = closestGrouped.mapValues { vs =>
-      val langLabel: String = ???
+//      val langLabel: String = ???
+      val langToVectors: Map[String, Iterable[(Int, Int)]] = vs.groupBy(_._1).map { case (l, list) => (langs(l/langSpread), list) }
+      val langLabel: String = langToVectors.mapValues(_.size).maxBy(_._2)._1
       // most common language in the cluster
-      val langPercent: Double = ???
+      val langPercent: Double = langToVectors(langLabel).size / vs.size
       // percent of the questions in the most common language
-      val clusterSize: Int = ???
-      val medianScore: Int = ???
+      val clusterSize: Int = vs.size
+      val medianScore: Int = vs.groupBy(_._2).maxBy(_._1)._1
 
       (langLabel, langPercent, clusterSize, medianScore)
     }

@@ -28,12 +28,20 @@ object TimeUsage {
 
   def timeUsageByLifePeriod(): Unit = {
     val (columns, initDf) = read("/timeusage/atussum.csv")
-    initDf.printSchema()
-
     val (primaryNeedsColumns, workColumns, otherColumns) = classifiedColumns(columns)
     val summaryDf = timeUsageSummary(primaryNeedsColumns, workColumns, otherColumns, initDf)
-    //    val finalDf = timeUsageGrouped(summaryDf)
-    //    finalDf.show()
+
+    /**
+    summaryDF schema:
+    |-- working: string (nullable = false)
+    |-- sex: string (nullable = false)
+    |-- age: string (nullable = false)
+    |-- primaryNeeds: double (nullable = true)
+    |-- work: double (nullable = true)
+    |-- other: double (nullable = true)
+      **/
+    val finalDf = timeUsageGrouped(summaryDf)
+    finalDf.show()
   }
 
   /** @return The read DataFrame along with its column names. */
@@ -75,7 +83,7 @@ object TimeUsage {
   /** @return An RDD Row compatible with the schema produced by `dfSchema`
     * @param line Raw fields
     */
-  def row(line: List[String]): Row = Row(line: _*)
+  def row(line: List[String]): Row = Row(line.head.toString :: line.tail.map(_.toDouble): _*)
 
   /** @return The initial data frame columns partitioned in three groups: primary needs (sleeping, eating, etc.),
     *         work and other (leisure activities)
@@ -188,7 +196,12 @@ object TimeUsage {
     *               Finally, the resulting DataFrame should be sorted by working status, sex and age.
     */
   def timeUsageGrouped(summed: DataFrame): DataFrame = {
-    ???
+    summed.groupBy($"working", $"sex", $"age")
+      .agg(
+        round(avg($"primaryNeeds"), 1).as(("primaryNeeds")),
+        round(avg($"work"), 1).as(("work")),
+        round(avg($"other"), 1).as(("other"))
+      )
   }
 
   /**
